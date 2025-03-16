@@ -57,8 +57,6 @@ export async function Login({req, res} : Props) {
 
         const { Password: _, Persons_Users_PersonIdToPersons: person, ...userWithoutPassword } = user;
 
-        console.log(person.Name);
-
         (BigInt.prototype as any).toJSON = function() {
             return this.toString();
         };
