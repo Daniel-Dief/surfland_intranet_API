@@ -20,6 +20,18 @@ export async function Login({req, res} : Props) {
         const user = await prisma.users.findFirst({
             where: {
                 Login: login,
+            },
+            select: {
+                UserId: true,
+                Login: true,
+                Password: true,
+                AccessProfileId: true,
+                StatusId: true,
+                Persons_Users_PersonIdToPersons: {
+                    select: {
+                        Name: true
+                    }
+                }
             }
         })
 
@@ -43,7 +55,9 @@ export async function Login({req, res} : Props) {
             { expiresIn: '1d' }
         );
 
-        const { Password: _, ...userWithoutPassword } = user;
+        const { Password: _, Persons_Users_PersonIdToPersons: person, ...userWithoutPassword } = user;
+
+        console.log(person.Name);
 
         (BigInt.prototype as any).toJSON = function() {
             return this.toString();
@@ -51,6 +65,7 @@ export async function Login({req, res} : Props) {
 
         return res.status(200).json({
             user: {
+                Name: person.Name,
                 ...userWithoutPassword
             },
             token
