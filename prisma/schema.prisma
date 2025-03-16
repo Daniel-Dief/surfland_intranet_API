@@ -1,0 +1,226 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model AccessProfiles {
+  AccessProfileId BigInt        @id @default(autoincrement())
+  Name            String        @db.VarChar(200)
+  WaveLimitMonth  Int
+  WaveLimitWeek   Int
+  WaveLimitDay    Int
+  StatusId        BigInt
+  Status          Status        @relation(fields: [StatusId], references: [StatusId], onUpdate: Restrict, map: "accessProfiles_ibfk_1")
+  Permissions     Permissions[]
+  Users           Users[]
+
+  @@index([StatusId], map: "StatusId")
+}
+
+model Availability {
+  AvailabilityId BigInt    @id @default(autoincrement())
+  WaveId         BigInt
+  StatusId       BigInt
+  WaveDate       DateTime  @db.Date
+  WaveTime       DateTime  @db.Time(0)
+  Amount         BigInt
+  CreatedBy      BigInt?
+  CreatedAt      DateTime  @db.DateTime(0)
+  Waves          Waves     @relation(fields: [WaveId], references: [WaveId], onUpdate: Restrict, map: "availability_ibfk_1")
+  Users          Users?    @relation(fields: [CreatedBy], references: [UserId], onDelete: Restrict, onUpdate: Restrict, map: "availability_ibfk_2")
+  Status         Status    @relation(fields: [StatusId], references: [StatusId], onUpdate: Restrict, map: "availability_ibfk_3")
+  Tickets        Tickets[]
+
+  @@index([CreatedBy], map: "CreatedBy")
+  @@index([StatusId], map: "StatusId")
+  @@index([WaveId], map: "WaveId")
+}
+
+model Evaluate {
+  Id   Int     @id @default(autoincrement())
+  body String? @db.VarChar(255)
+}
+
+model FinancialSpreadsheet {
+  FsId                        Int             @id @default(autoincrement())
+  SaleDate                    DateTime        @db.Date
+  SaleTime                    DateTime        @db.Time(0)
+  SaleStatus                  String          @db.VarChar(30)
+  OriginalValue               Float           @db.Float
+  UpdatedValue                Float?          @db.Float
+  PaymentModality             String          @db.VarChar(50)
+  PaymentType                 String          @db.VarChar(30)
+  PreAuthorized               String?         @db.VarChar(30)
+  Installments                Int
+  Flag                        String          @db.VarChar(50)
+  MdrTax                      Decimal?        @db.Decimal(10, 0)
+  MdrValue                    Decimal?        @db.Decimal(10, 0)
+  AutomaticReceivingFee       Decimal?        @db.Decimal(10, 0)
+  AutomaticReceivingFeeAmount Decimal?        @db.Decimal(10, 0)
+  DeductedFees                Decimal?        @db.Decimal(10, 0)
+  TotalDeductedFees           Decimal?        @db.Decimal(10, 0)
+  NetAmount                   Decimal?        @db.Decimal(10, 0)
+  NSU                         Int
+  ReceivingDeadline           String          @db.VarChar(30)
+  LotNumber                   Int
+  AuthorizationNumber         String          @db.VarChar(15)
+  MerchantNumber              Int
+  MerchantName                String          @db.VarChar(50)
+  CNPJ                        String          @db.VarChar(20)
+  CardNumber                  String?         @db.VarChar(20)
+  DigitalWalletID             String?         @db.VarChar(20)
+  PaymentMethod               String          @db.VarChar(30)
+  POSDeviceType               String?         @db.VarChar(10)
+  POSDeviceCode               String          @db.VarChar(20)
+  TID                         String?         @db.VarChar(20)
+  OrderNumber                 String?         @db.VarChar(20)
+  BoardingFee                 Decimal?        @db.Decimal(10, 0)
+  CanceledByMerchant          String?         @db.VarChar(10)
+  CancellationDate            DateTime?       @db.Date
+  CanceledAmount              Decimal?        @db.Decimal(10, 0)
+  InChargebackDispute         String          @db.VarChar(10)
+  ChargebackDisputeDate       DateTime        @db.Date
+  ChargebackResolution        String?         @db.VarChar(20)
+  ChargebackResolutionDate    DateTime?       @db.Date
+  CardNationality             String          @db.VarChar(20)
+  ForeignCurrency             String          @db.VarChar(10)
+  PrepaidCard                 String          @db.VarChar(10)
+  NotIntegrated               NotIntegrated[]
+}
+
+model Functions {
+  FunctionId  BigInt        @id @default(autoincrement())
+  Name        String        @db.VarChar(200)
+  StatusId    BigInt
+  Status      Status        @relation(fields: [StatusId], references: [StatusId], onUpdate: Restrict, map: "Functions_ibfk_1")
+  Html        Html[]
+  Permissions Permissions[]
+
+  @@index([StatusId], map: "StatusId")
+}
+
+model Html {
+  Id         BigInt    @id @default(autoincrement())
+  FunctionId BigInt
+  html       String    @db.Text
+  Functions  Functions @relation(fields: [FunctionId], references: [FunctionId], onUpdate: Restrict, map: "html_ibfk_1")
+
+  @@index([FunctionId], map: "FunctionId")
+}
+
+model Logs {
+  LogId     Int      @id @default(autoincrement())
+  UserId    BigInt
+  ChangedAt DateTime @default(now()) @db.DateTime(0)
+  OldJSON   String?  @db.Text
+  NewJSON   String?  @db.Text
+  Users     Users    @relation(fields: [UserId], references: [UserId], onUpdate: Restrict, map: "Logs_Users_FK")
+
+  @@index([UserId], map: "Logs_Users_FK")
+}
+
+model NotIntegrated {
+  NotIntegratedId      Int                  @id @default(autoincrement())
+  FsId                 Int
+  FinancialSpreadsheet FinancialSpreadsheet @relation(fields: [FsId], references: [FsId], onUpdate: Restrict, map: "NotIntegrated_ibfk_1")
+
+  @@index([FsId], map: "FsId")
+}
+
+model Permissions {
+  PermissionId    BigInt         @id @default(autoincrement())
+  AccessProfileId BigInt
+  FunctionId      BigInt
+  AccessProfiles  AccessProfiles @relation(fields: [AccessProfileId], references: [AccessProfileId], onUpdate: Restrict, map: "permissions_ibfk_1")
+  Functions       Functions      @relation(fields: [FunctionId], references: [FunctionId], onUpdate: Restrict, map: "permissions_ibfk_2")
+
+  @@index([AccessProfileId], map: "AccessProfileId")
+  @@index([FunctionId], map: "FunctionId")
+}
+
+model Persons {
+  PersonId                      BigInt    @id @default(autoincrement())
+  Name                          String    @db.VarChar(200)
+  Document                      String    @unique(map: "Document_2") @db.VarChar(20)
+  BirthDate                     DateTime  @db.Date
+  Email                         String    @db.VarChar(100)
+  Phone                         String    @db.Char(11)
+  Foreigner                     Boolean   @db.Bit(1)
+  Tickets                       Tickets[]
+  Users_Users_PersonIdToPersons Users[]   @relation("Users_PersonIdToPersons")
+  Users_Users_LoginToPersons    Users[]   @relation("Users_LoginToPersons")
+
+  @@index([Document], map: "Document")
+}
+
+model Status {
+  StatusId       BigInt           @id @default(autoincrement())
+  Name           String           @db.VarChar(200)
+  AccessProfiles AccessProfiles[]
+  Availability   Availability[]
+  Functions      Functions[]
+  Tickets        Tickets[]
+  Users          Users[]
+  Waves          Waves[]
+}
+
+model Tickets {
+  TicketId                       BigInt       @id @default(autoincrement())
+  UserId                         BigInt
+  PersonId                       BigInt
+  AvailabilityId                 BigInt
+  StatusId                       BigInt
+  CreatedAt                      DateTime     @db.DateTime(0)
+  UpdatedAt                      DateTime?    @db.DateTime(0)
+  UpdatedBy                      BigInt?
+  Users_Tickets_UserIdToUsers    Users        @relation("Tickets_UserIdToUsers", fields: [UserId], references: [UserId], onUpdate: Restrict, map: "tickets_ibfk_1")
+  Persons                        Persons      @relation(fields: [PersonId], references: [PersonId], onUpdate: Restrict, map: "tickets_ibfk_2")
+  Availability                   Availability @relation(fields: [AvailabilityId], references: [AvailabilityId], onUpdate: Restrict, map: "tickets_ibfk_3")
+  Status                         Status       @relation(fields: [StatusId], references: [StatusId], onUpdate: Restrict, map: "tickets_ibfk_4")
+  Users_Tickets_UpdatedByToUsers Users?       @relation("Tickets_UpdatedByToUsers", fields: [UpdatedBy], references: [UserId], onDelete: Restrict, onUpdate: Restrict, map: "tickets_ibfk_5")
+
+  @@index([AvailabilityId], map: "AvailabilityId")
+  @@index([PersonId], map: "PersonId")
+  @@index([StatusId], map: "StatusId")
+  @@index([UpdatedBy], map: "UpdatedBy")
+  @@index([UserId], map: "UserId")
+}
+
+model Users {
+  UserId                           BigInt         @id @default(autoincrement())
+  Login                            String         @db.VarChar(20)
+  Password                         String         @db.VarChar(255)
+  AccessProfileId                  BigInt
+  StatusId                         BigInt
+  TemporaryPassword                String?        @db.VarChar(6)
+  PersonId                         BigInt
+  UpdatedAt                        DateTime?      @db.DateTime(0)
+  UpdatedBy                        Int?
+  Availability                     Availability[]
+  Logs                             Logs[]
+  Tickets_Tickets_UserIdToUsers    Tickets[]      @relation("Tickets_UserIdToUsers")
+  Tickets_Tickets_UpdatedByToUsers Tickets[]      @relation("Tickets_UpdatedByToUsers")
+  Persons_Users_PersonIdToPersons  Persons        @relation("Users_PersonIdToPersons", fields: [PersonId], references: [PersonId], onUpdate: Restrict, map: "users_ibfk_1")
+  Persons_Users_LoginToPersons     Persons        @relation("Users_LoginToPersons", fields: [Login], references: [Document], onUpdate: Restrict, map: "users_ibfk_2")
+  AccessProfiles                   AccessProfiles @relation(fields: [AccessProfileId], references: [AccessProfileId], onUpdate: Restrict, map: "users_ibfk_3")
+  Status                           Status         @relation(fields: [StatusId], references: [StatusId], onUpdate: Restrict, map: "users_ibfk_4")
+
+  @@index([AccessProfileId], map: "AccessProfileId")
+  @@index([Login], map: "Login")
+  @@index([PersonId], map: "PersonId")
+  @@index([StatusId], map: "StatusId")
+}
+
+model Waves {
+  WaveId       BigInt         @id @default(autoincrement())
+  Name         String         @db.VarChar(255)
+  StatusId     BigInt
+  Availability Availability[]
+  Status       Status         @relation(fields: [StatusId], references: [StatusId], onUpdate: Restrict, map: "waves_ibfk_1")
+
+  @@index([StatusId], map: "StatusId")
+}
