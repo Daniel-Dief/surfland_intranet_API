@@ -40,7 +40,7 @@ export async function Login({req, res} : Props) {
         const token = jwt.sign(
             { id: user.UserId.toString() },
             process.env.JWT_SECRET as string,
-            { expiresIn: '1h' }
+            { expiresIn: '1d' }
         );
 
         const { Password: _, ...userWithoutPassword } = user;
