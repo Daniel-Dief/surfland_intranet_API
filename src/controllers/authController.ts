@@ -1,6 +1,7 @@
 // src/controllers/authController.ts
 import { Request, Response, NextFunction } from 'express';
 import { PrismaClient } from '@prisma/client';
+import decodeCredentials from '../utils/decodeHash';
 import jwt from 'jsonwebtoken';
 const prisma = new PrismaClient();
 
@@ -11,11 +12,13 @@ interface Props {
 
 export async function Login({req, res} : Props) {
     try {
-        const { login, password } = req.body;
+        const { hashPassword } = req.body;
 
-        if (!login || !password) {
-            return res.status(400).json({ error: 'Login e senha são obrigatórios' });
+        if (!hashPassword) {
+            return res.status(400).json({ error: 'Credenciais não informadas' });
         }
+
+        const { login, password } = decodeCredentials(hashPassword)
 
         const user = await prisma.users.findFirst({
             where: {
