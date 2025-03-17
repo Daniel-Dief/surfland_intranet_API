@@ -7,6 +7,7 @@ import { validateToken } from './middlewares/validateToken';
 import loginRouter from './routes/login';
 import userRouter from './routes/user';
 import wavesRouter from './routes/wave';
+import ticketsRouter from './routes/ticket';
 
 dotenv.config();
 
@@ -48,5 +49,7 @@ app.use('/api', loginRouter);
 app.use('/api/user', userRouter);
 
 app.use('/api/waves', wavesRouter);
+
+app.use('/api/tickets', ticketsRouter);
 
 export default app;

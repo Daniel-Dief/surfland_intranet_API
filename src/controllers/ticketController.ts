@@ -102,10 +102,43 @@ async function deleteTicket(ticketId : number) {
     });
 }
 
+async function getTicketsByUser(userId : number) {
+    if(!userId) {
+        throw new Error("UserId is required");
+    }
+
+    return await prisma.tickets.findMany({
+        where: {
+          UserId: userId
+        },
+        select: {
+          TicketId: true,
+          CreatedAt: true,
+          Availability: {
+            select: {
+              WaveDate: true,
+              WaveTime: true,
+              Waves: {
+                select: {
+                  Name: true
+                }
+              }
+            }
+          },
+          Status: {
+            select: {
+              Name: true
+            }
+          }
+        }
+      });
+}
+
 export {
     getTickets,
     getTicketById,
     createTicket,
     updateTicket,
-    deleteTicket
+    deleteTicket,
+    getTicketsByUser
 }
