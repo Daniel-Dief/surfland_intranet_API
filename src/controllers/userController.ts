@@ -45,6 +45,33 @@ async function getUserById(userId: number) {
     });
 }
 
+
+async function getUserInfo(userId: number) {
+    if(!userId) {
+        throw new Error("User Id is required");
+    }
+
+    return await prisma.users.findUnique({
+        where: {
+            UserId: userId
+        },
+        select: {
+            UserId: true,
+            StatusId: true,
+            AccessProfileId: true,
+            Persons_Users_PersonIdToPersons: {
+                select: {
+                    Name: true,
+                    Email: true,
+                    Phone: true,
+                    BirthDate: true,
+                    Document: true
+                }
+            }
+        }
+    });
+}
+
 async function createUser(user: IUser) {
     if(!user) {
         throw new Error("User data is required");
@@ -108,6 +135,7 @@ async function deleteUser(userId: number) {
 export {
     getUsers,
     getUserById,
+    getUserInfo,
     createUser,
     updatedUser,
     deleteUser

@@ -1,11 +1,58 @@
 import { Router } from 'express';
 import getUserIdFromJwt from '../utils/userIdFromJwt'
-import { getUserById } from '../controllers/userController';
+import { getUserById, getUserInfo } from '../controllers/userController';
 import { updatedUser } from '../controllers/userController';
 import { getPermissions } from '../controllers/permissionController';
 import { getFunctionsByAccessProfileId } from '../controllers/functionController';
 
 const router = Router();
+
+/**
+ * @swagger
+ * /user/myUser:
+ *   get:
+ *     summary: Retorna informações do usuário
+ *     tags: [User]
+ *     responses:
+ *       200:
+ *         description: Retorna informações do usuário
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ */
+router.get('/myUser', async (req, res) => {
+    const authHeader = req.headers.authorization;
+
+    if(!authHeader) {
+        res.status(401).json({ error: 'Token não informado' });
+        return;
+    }
+
+    const userInfo = await getUserInfo(
+        getUserIdFromJwt(authHeader)
+    );
+
+    if(!userInfo) {
+        res.status(400).json({ error: 'Usuário não encontrado' });
+        return;
+    }
+
+    const userInfos = {
+        UserId: userInfo.UserId.toString(),
+        StatusId: userInfo.StatusId.toString(),
+        AccessProfileId: userInfo.AccessProfileId.toString(),
+        Name: userInfo.Persons_Users_PersonIdToPersons.Name,
+        Email: userInfo.Persons_Users_PersonIdToPersons.Email,
+        Phone: userInfo.Persons_Users_PersonIdToPersons.Phone,
+        BirthDate: userInfo.Persons_Users_PersonIdToPersons.BirthDate,
+        Document: userInfo.Persons_Users_PersonIdToPersons.Document
+    }
+
+    res.status(200).json(userInfos);
+})
 
 /**
  * @swagger
