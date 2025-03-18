@@ -53,8 +53,8 @@ export async function validateToken({ req, res, next } : Props) {
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       res.status(401).json({ error: 'Token expirado' });
+    } else {
+      res.status(401).json({ error: 'Token inválido' });
     }
-
-    res.status(401).json({ error: 'Token inválido' });
   }
 };
