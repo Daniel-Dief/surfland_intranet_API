@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import { availabilitiesScheduleType } from "../@types/forControllers/availabilitie";
+import { addMonth, resetHours } from "../utils/dates";
 const prisma = new PrismaClient();
 
 interface IAvailability {
@@ -102,10 +104,74 @@ async function deleteAvailability(availabilityId: number) {
     });
 }
 
+async function getAvailableShedules(waveId : number) {
+    if(!waveId) {
+        throw new Error("waveId is required");
+    }
+
+    let now = addMonth(new Date(), 1)
+    let nextMonth = addMonth(new Date(), 2);
+    now = resetHours(now);
+    nextMonth = resetHours(nextMonth);
+    now.setDate(1);
+    nextMonth.setDate(1);
+
+    const availabilities = await prisma.availability.findMany({
+        where: {
+            WaveId: waveId,
+            StatusId: 1,
+            WaveDate: {
+                gte: now.toISOString(),
+                lte: nextMonth.toISOString(),
+            },
+        },
+        select: {
+            WaveTime: true,
+            Amount: true,
+            AvailabilityId: true,
+            Tickets: {
+                where: {
+                    StatusId: {
+                        in: [1, 2],
+                    },
+                },
+                select: {
+                    TicketId: true,
+                },
+            },
+        },
+        orderBy: {
+            WaveTime: 'asc'
+        },
+    });
+
+    const groupedResult = availabilities.reduce<Record<string, availabilitiesScheduleType>>((acc, curr) => {
+        const key = `${curr.WaveTime}-${curr.Amount}-${curr.AvailabilityId}`;
+        if (!acc[key]) {
+            acc[key] = {
+                WaveTime: curr.WaveTime,
+                Amount: Number(curr.Amount),
+                AvailabilityId: Number(curr.AvailabilityId),
+                TicketCount: 0,
+            };
+        }
+        acc[key].TicketCount += curr.Tickets.length;
+        return acc;
+    }, {});
+
+    const filteredResult = Object
+        .values(groupedResult)
+        .filter((item) => item.TicketCount < item.Amount)
+        .map(({ Amount, TicketCount, ...rest}) => rest);
+
+    return filteredResult;
+}
+
 export {
     getAvailabilities,
     getAvailabilitieById,
     createAvailability,
     updateAvailability,
-    deleteAvailability
+    deleteAvailability,
+    getAvailableShedules
 }
