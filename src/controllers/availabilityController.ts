@@ -167,11 +167,47 @@ async function getAvailableShedules(waveId : number) {
     return filteredResult;
 }
 
+async function getAvailableWaves() {
+    let now = addMonth(new Date(), 1)
+    let nextMonth = addMonth(new Date(), 2);
+    now = resetHours(now);
+    nextMonth = resetHours(nextMonth);
+    now.setUTCDate(1);
+    nextMonth.setUTCDate(1);
+
+    const availabilities = await prisma.availability.findMany({
+        select: {
+            Waves: {
+                select: {
+                    WaveId: true,
+                    Name: true,
+                }
+            }
+        },
+        where: {
+            StatusId: 1,
+            WaveDate: {
+                gte: now.toISOString(),
+                lte: nextMonth.toISOString(),
+            },
+        },
+        distinct: ['WaveId']
+    })
+
+    const waves = availabilities.map((item) => ({
+        WaveId: Number(item.Waves.WaveId),
+        Name: item.Waves.Name
+    }));
+
+    return waves;
+}
+
 export {
     getAvailabilities,
     getAvailabilitieById,
     createAvailability,
     updateAvailability,
     deleteAvailability,
-    getAvailableShedules
+    getAvailableShedules,
+    getAvailableWaves
 }

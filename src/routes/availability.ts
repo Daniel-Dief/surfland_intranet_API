@@ -1,17 +1,17 @@
 import { Router } from 'express';
-import { getAvailableShedules } from '../controllers/availabilityController'; 
+import { getAvailableShedules, getAvailableWaves } from '../controllers/availabilityController'; 
 
 const router = Router();
 
 /**
  * @swagger
- * /tickets/myTickets:
+ * /availability/availableShedules:
  *   get:
- *     summary: Retorna os tickets do usuário
- *     tags: [Tickets]
+ *     summary: Retorna os horários disponíveis de uma onda
+ *     tags: [Availability]
  *     responses:
  *       200:
- *         description: Retorna os tickets do usuário
+ *         description: Retorna os horários disponíveis de uma onda
  *         content:
  *           application/json:
  *             schema:
@@ -23,7 +23,7 @@ const router = Router();
  *                     type: number
  *                     description: Id da onda
  */
-router.get('/availabilityWaves', async (req, res) =>{
+router.get('/availableShedules', async (req, res) =>{
     const { waveId } = req.query;
 
     if(!waveId) {
@@ -40,7 +40,33 @@ router.get('/availabilityWaves', async (req, res) =>{
     } else {
         res.status(200).json(schedules);
     }
+});
 
+/**
+ * @swagger
+ * /availability/availabilityWaves:
+ *   get:
+ *     summary: Retorna as ondas disponiveis para o proximo mes
+ *     tags: [Availability]
+ *     responses:
+ *       200:
+ *         description: Retorna as ondas disponiveis para o proximo mes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ */
+router.get('/availabilityWaves', async (req, res) =>{
+    const waves = await getAvailableWaves();
+
+    if(waves.length === 0) {
+        res.status(200).json({ message: "No waves available" });
+    } else {
+        res.status(200).json(waves);
+    }
 });
 
 export default router;
