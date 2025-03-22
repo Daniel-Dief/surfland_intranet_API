@@ -113,8 +113,8 @@ async function getAvailableShedules(waveId : number) {
     let nextMonth = addMonth(new Date(), 2);
     now = resetHours(now);
     nextMonth = resetHours(nextMonth);
-    now.setDate(1);
-    nextMonth.setDate(1);
+    now.setUTCDate(1);
+    nextMonth.setUTCDate(1);
 
     const availabilities = await prisma.availability.findMany({
         where: {
