@@ -9,10 +9,10 @@ export function addMonth(date : Date, months : number): Date {
 };
 
 export function resetHours(date: Date) : Date {
-    date.setHours(0);
-    date.setMinutes(0);
-    date.setSeconds(0);
-    date.setMilliseconds(0);
+    date.setUTCHours(0);
+    date.setUTCMinutes(0);
+    date.setUTCSeconds(0);
+    date.setUTCMilliseconds(0);
 
     return date;
 }
