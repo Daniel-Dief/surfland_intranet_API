@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { availabilitiesScheduleType } from "../@types/forControllers/availabilitie";
-import { addMonth, resetHours } from "../utils/dates";
+import { addMonth, giveDateByTime, resetHours } from "../utils/dates";
 const prisma = new PrismaClient();
 
 interface IAvailability {
@@ -202,6 +202,42 @@ async function getAvailableWaves() {
     return waves;
 }
 
+async function getAvailableDates(waveId : number, waveTime: string) {
+    if(!waveId || !waveTime) {
+        throw new Error("waveId and waveTime is required");
+    }
+
+    let now = addMonth(new Date(), 1)
+    let nextMonth = addMonth(new Date(), 2);
+    now = resetHours(now);
+    nextMonth = resetHours(nextMonth);
+    now.setUTCDate(1);
+    nextMonth.setUTCDate(1);
+
+    const availabilities = await prisma.availability.findMany({
+        select: {
+            WaveDate: true,
+            AvailabilityId: true
+        },
+        where: {
+            StatusId: 1,
+            WaveId: waveId,
+            WaveTime: giveDateByTime(waveTime),
+            WaveDate: {
+                gte: now.toISOString(),
+                lte: nextMonth.toISOString(),
+            },
+        }
+    })
+
+    const dates = availabilities.map((item) => ({
+        WaveDate: item.WaveDate,
+        AvailabilityId: Number(item.AvailabilityId)
+    }));
+
+    return dates;
+}
+
 export {
     getAvailabilities,
     getAvailabilitieById,
@@ -209,5 +245,6 @@ export {
     updateAvailability,
     deleteAvailability,
     getAvailableShedules,
-    getAvailableWaves
+    getAvailableWaves,
+    getAvailableDates
 }

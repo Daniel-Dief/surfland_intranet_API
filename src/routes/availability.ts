@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAvailableShedules, getAvailableWaves } from '../controllers/availabilityController'; 
+import { getAvailableShedules, getAvailableWaves, getAvailableDates } from '../controllers/availabilityController'; 
 
 const router = Router();
 
@@ -66,6 +66,46 @@ router.get('/availabilityWaves', async (req, res) =>{
         res.status(200).json({ message: "No waves available" });
     } else {
         res.status(200).json(waves);
+    }
+});
+
+/**
+ * @swagger
+ * /availability/availabilityDates:
+ *   post:
+ *     summary: Retorna as datas disponiveis para uma onda
+ *     tags: [Availability]
+ *     responses:
+ *       200:
+ *         description: Retorna as datas disponiveis para uma onda
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   waveId:
+ *                     type: number
+ *                     description: Id da onda
+ *                   waveTime:
+ *                     type: string
+ *                     description: Horário da onda
+ */
+router.post('/availabilityDates', async (req, res) =>{
+    const { waveId, waveTime } = req.body;
+
+    if(!waveId || !waveTime) {
+        res.status(400).json({ message: "WaveId and waveTime is required" });
+        return;
+    }
+
+    const dates = await getAvailableDates(Number(waveId.toString()), waveTime.toString());
+
+    if(dates.length === 0) {
+        res.status(200).json({ message: "No dates available" });
+    } else {
+        res.status(200).json(dates);
     }
 });
 
