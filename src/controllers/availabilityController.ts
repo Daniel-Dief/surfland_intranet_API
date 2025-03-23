@@ -127,44 +127,16 @@ async function getAvailabilitySchedules(waveId : number) {
         },
         select: {
             WaveTime: true,
-            Amount: true,
-            AvailabilityId: true,
-            Tickets: {
-                where: {
-                    StatusId: {
-                        in: [1, 2],
-                    },
-                },
-                select: {
-                    TicketId: true,
-                },
-            },
         },
         orderBy: {
             WaveTime: 'asc'
         },
+        distinct: ['WaveTime']
     });
 
-    const groupedResult = availabilities.reduce<Record<string, availabilitiesScheduleType>>((acc, curr) => {
-        const key = `${curr.WaveTime}-${curr.Amount}-${curr.AvailabilityId}`;
-        if (!acc[key]) {
-            acc[key] = {
-                WaveTime: curr.WaveTime,
-                Amount: Number(curr.Amount),
-                AvailabilityId: Number(curr.AvailabilityId),
-                TicketCount: 0,
-            };
-        }
-        acc[key].TicketCount += curr.Tickets.length;
-        return acc;
-    }, {});
+    const schedules = availabilities.map((item) => item.WaveTime.toISOString().slice(11, 19));
 
-    const filteredResult = Object
-        .values(groupedResult)
-        .filter((item) => item.TicketCount < item.Amount)
-        .map(({ Amount, TicketCount, ...rest}) => rest);
-
-    return filteredResult;
+    return schedules;
 }
 
 async function getAvailableWaves() {
