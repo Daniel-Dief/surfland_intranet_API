@@ -16,3 +16,10 @@ export function resetHours(date: Date) : Date {
 
     return date;
 }
+
+export function giveDateByTime(time : string) {
+    let date = new Date();
+    date.setUTCHours(Number(time.split(":")[0]), Number(time.split(":")[1]), 0, 0);
+
+    return date;
+}
