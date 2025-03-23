@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAvailableShedules, getAvailableWaves, getAvailableDates } from '../controllers/availabilityController'; 
+import { getAvailabilitySchedules, getAvailableWaves, getAvailableDates } from '../controllers/availabilityController'; 
 
 const router = Router();
 
@@ -23,7 +23,7 @@ const router = Router();
  *                     type: number
  *                     description: Id da onda
  */
-router.get('/availableShedules', async (req, res) =>{
+router.get('/availabilitySchedules', async (req, res) =>{
     const { waveId } = req.query;
 
     if(!waveId) {
@@ -33,7 +33,7 @@ router.get('/availableShedules', async (req, res) =>{
 
     const intWaveIt = parseInt(waveId as string);
 
-    const schedules = await getAvailableShedules(intWaveIt);
+    const schedules = await getAvailabilitySchedules(intWaveIt);
 
     if(schedules.length === 0) {
         res.status(200).json({ message: "No schedules available" });

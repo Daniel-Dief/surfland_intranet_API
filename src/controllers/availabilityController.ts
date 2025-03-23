@@ -104,7 +104,7 @@ async function deleteAvailability(availabilityId: number) {
     });
 }
 
-async function getAvailableShedules(waveId : number) {
+async function getAvailabilitySchedules(waveId : number) {
     if(!waveId) {
         throw new Error("waveId is required");
     }
@@ -244,7 +244,7 @@ export {
     createAvailability,
     updateAvailability,
     deleteAvailability,
-    getAvailableShedules,
+    getAvailabilitySchedules,
     getAvailableWaves,
     getAvailableDates
 }
