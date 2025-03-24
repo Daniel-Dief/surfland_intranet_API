@@ -85,22 +85,22 @@ router.get('/availabilityWaves', async (req, res) =>{
  *               items:
  *                 type: object
  *                 properties:
- *                   waveId:
+ *                   WaveId:
  *                     type: number
  *                     description: Id da onda
- *                   waveTime:
+ *                   WaveTime:
  *                     type: string
  *                     description: Horário da onda
  */
 router.post('/availabilityDates', async (req, res) =>{
-    const { waveId, waveTime } = req.body;
+    const { WaveId, WaveTime } = req.body;
 
-    if(!waveId || !waveTime) {
-        res.status(400).json({ message: "WaveId and waveTime is required" });
+    if(!WaveId || !WaveTime) {
+        res.status(400).json({ message: "WaveId and WaveTime is required" });
         return;
     }
 
-    const dates = await getAvailableDates(Number(waveId.toString()), waveTime.toString());
+    const dates = await getAvailableDates(Number(WaveId.toString()), WaveTime.toString());
 
     if(dates.length === 0) {
         res.status(200).json({ message: "No dates available" });
