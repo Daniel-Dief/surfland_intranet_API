@@ -134,11 +134,30 @@ async function getTicketsByUser(userId : number) {
       });
 }
 
+async function scheduleTicket(userId : number, personId : number, availabilityId : number) {
+    if(!userId || !personId || !availabilityId) {
+        throw new Error("UserId, PersonId and AvailabilityId is required");
+    }
+
+    const ticket =  await prisma.tickets.create({
+        data: {
+            UserId: userId,
+            PersonId: personId,
+            AvailabilityId: availabilityId,
+            StatusId: 1,
+            CreatedAt: new Date().toISOString()
+        }
+    })
+
+    return ticket.TicketId;
+}
+
 export {
     getTickets,
     getTicketById,
     createTicket,
     updateTicket,
     deleteTicket,
-    getTicketsByUser
+    getTicketsByUser,
+    scheduleTicket
 }
