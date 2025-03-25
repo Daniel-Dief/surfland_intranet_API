@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { availabilitiesScheduleType } from "../@types/forControllers/availabilitie";
-import { addMonth, giveDateByTime, resetHours } from "../utils/dates";
+import { addMonth, giveDateByTime, lastHours, resetHours } from "../utils/dates";
 const prisma = new PrismaClient();
 
 interface IAvailability {
@@ -210,6 +210,106 @@ async function getAvailableDates(waveId : number, waveTime: string) {
     return dates;
 }
 
+async function getAvailabilityId(waveId : number, waveTime: string, waveDate: string) {
+    if(!waveId || !waveTime || !waveDate) {
+        throw new Error("waveId, waveTime and waveDate is required");
+    }
+
+    const formatWaveDate = resetHours(new Date(waveDate))
+    const formatWaveTime = giveDateByTime(waveTime)
+
+    const availability = await prisma.availability.findFirst({
+        select: {
+            AvailabilityId: true
+        },
+        where: {
+            WaveId: waveId,
+            WaveTime: formatWaveTime,
+            WaveDate: formatWaveDate
+        }
+    })
+
+    if(availability) {
+        return Number(availability.AvailabilityId);
+    } else {
+        return null;
+    }
+}
+
+async function checkDayLimit(availabilityId : number) {
+    if(!availabilityId) {
+        throw new Error("availabilityId is required");
+    }
+
+    const availability = await getAvailabilitieById(availabilityId);
+
+    if(!availability) {
+        throw new Error("Availability not found");
+    }
+
+    const firstDate = resetHours(new Date(availability.WaveDate));
+    const lastDate = lastHours(new Date(availability.WaveDate));
+
+    const limits = await prisma.availability.findMany({
+        where: {
+            WaveId:
+                Number(availability.WaveId) == 15 ?
+                { equals: 15 } :
+                { not: 15 },
+            WaveDate: {
+                gte: firstDate,
+                lte: lastDate,
+            },
+            Tickets: {
+                some: {
+                    StatusId: {
+                        in: [1, 2],
+                    },
+                },
+            },
+        },
+        select: {
+            WaveDate: true,
+            Tickets: {
+                select: {
+                    TicketId: true,
+                },
+            }
+        },
+        orderBy: {
+        WaveDate: 'asc',
+        },
+    });
+
+    type TLimit = {
+        Date: Date;
+        count: number;
+    }
+
+    const dayLimit = limits
+        .reduce((acc : TLimit[], curr) => {
+            const index = acc.findIndex((item : any) => item.Date == curr.WaveDate);
+            if(index == -1) {
+                acc.push({
+                    Date: curr.WaveDate,
+                    count: curr.Tickets.length
+                })
+            } else {
+                acc[index].count += curr.Tickets.length;
+            }
+            return acc;
+        }, []);
+
+    if( dayLimit.length == 0 ||
+        dayLimit[0].count <= 6 &&
+        dayLimit[0].Date == availability.WaveDate
+    ) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 export {
     getAvailabilities,
     getAvailabilitieById,
@@ -218,5 +318,7 @@ export {
     deleteAvailability,
     getAvailabilitySchedules,
     getAvailableWaves,
-    getAvailableDates
+    getAvailableDates,
+    getAvailabilityId,
+    checkDayLimit
 }
