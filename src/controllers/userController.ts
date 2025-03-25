@@ -1,4 +1,6 @@
 import { PrismaClient } from "@prisma/client";
+import { addMonth, getWeekOfMonth, resetHours } from "../utils/dates";
+import { getAccessProfileById } from "./accessProfileController";
 const prisma = new PrismaClient();
 
 interface IUser {
@@ -72,6 +74,120 @@ async function getUserInfo(userId: number) {
     });
 }
 
+async function checkUserLimitForNextMonth(userId: number) {
+    if(!userId) {
+        throw new Error("User Id is required");
+    }
+
+    let now = addMonth(new Date(), 1)
+    let nextMonth = addMonth(new Date(), 2);
+    now = resetHours(now);
+    nextMonth = resetHours(nextMonth);
+    now.setUTCDate(1);
+    nextMonth.setUTCDate(1);
+
+    const ticketsByUser = await prisma.tickets.findMany({
+        select: {
+            TicketId: true,
+            Availability: {
+                select: {
+                    WaveDate: true
+                }
+            }
+        },
+        where: {
+            UserId: userId,
+            StatusId: {
+                in: [1, 2]
+            },
+            Availability: {
+                WaveDate: {
+                    gte: now.toISOString(),
+                    lte: nextMonth.toISOString()
+                }
+            }
+        }
+    })
+
+    type tempTicketType = {
+        label: number;
+        count: number;
+    }
+
+    const ticketsMonth = ticketsByUser.length;
+    const ticketsWeek = ticketsByUser
+        .map(ticket => getWeekOfMonth(ticket.Availability.WaveDate))
+        .map(week => ({ label: week, count: 1 }))
+        .reduce((acc : tempTicketType[], curr) => {
+            const existing = acc.find(item => item.label === curr.label);
+            if (existing) {
+                existing.count += curr.count;
+            } else {
+                acc.push(curr);
+            }
+            return acc;
+        }, [])
+        .reduce((max : number, curr : tempTicketType) =>
+            Math.max(max, curr.count),
+        0);
+
+    const ticketsDay = ticketsByUser
+        .map(ticket => ticket.Availability.WaveDate.getDay())
+        .map(week => ({ label: week, count: 1 }))
+        .reduce((acc : tempTicketType[], curr) => {
+            const existing = acc.find(item => item.label === curr.label);
+            if (existing) {
+                existing.count += curr.count;
+            } else {
+                acc.push(curr);
+            }
+            return acc;
+        }, [])
+        .reduce((max : number, curr : tempTicketType) =>
+            Math.max(max, curr.count),
+        0);
+
+
+
+    const accessProfileId = await getUserById(userId).then(user => Number(user?.AccessProfileId))
+
+    const accessProfileLimits = await getAccessProfileById(accessProfileId).then(profile => ({
+        month: profile?.WaveLimitMonth,
+        week: profile?.WaveLimitWeek,
+        day: profile?.WaveLimitDay
+    }));
+
+    if(
+        accessProfileLimits.month === undefined ||
+        accessProfileLimits.week === undefined ||
+        accessProfileLimits.day === undefined
+    ) {
+        throw new Error("Access Profile limits not found");
+    }
+
+    if(ticketsMonth >= accessProfileLimits.month) {
+        return {
+            hasLimit: false,
+            type: "month"
+        }
+    } else if(ticketsWeek >= accessProfileLimits.week) {
+        return {
+            hasLimit: false,
+            type: "week"
+        }
+    } else if(ticketsDay >= accessProfileLimits.day) {
+        return {
+            hasLimit: false,
+            type: "day"
+        }
+    } else {
+        return {
+            hasLimit: true,
+            type: "none"
+        }
+    }
+}
+
 async function createUser(user: IUser) {
     if(!user) {
         throw new Error("User data is required");
@@ -138,5 +254,6 @@ export {
     getUserInfo,
     createUser,
     updatedUser,
-    deleteUser
+    deleteUser,
+    checkUserLimitForNextMonth
 };
