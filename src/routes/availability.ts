@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { getAvailabilitySchedules, getAvailableWaves, getAvailableDates } from '../controllers/availabilityController'; 
+import { getAvailabilitySchedules, getAvailableWaves, getAvailableDates, getAvailabilityId, checkDayLimit } from '../controllers/availabilityController'; 
+import { checkUserLimitForNextMonth, getUserById } from '../controllers/userController';
+import getUserIdFromJwt from '../utils/userIdFromJwt';
+import { scheduleTicket } from '../controllers/ticketController';
 
 const router = Router();
 
@@ -107,6 +110,84 @@ router.post('/availabilityDates', async (req, res) =>{
     } else {
         res.status(200).json(dates);
     }
+});
+
+
+/**
+ * @swagger
+ * /availability/scheduleSession:
+ *   post:
+ *     summary: Agenda a sessão solicitada pelo usuário
+ *     tags: [Availability]
+ *     responses:
+ *       200:
+ *         description: Agenda a sessão solicitada pelo usuário
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   WaveId:
+ *                     type: number
+ *                     description: Id da onda
+ *                   WaveTime:
+ *                     type: string
+ *                     description: Horário da onda
+ *                   WaveDate:
+ *                     type: string
+ *                     description: Data da onda
+ */
+router.post('/scheduleSession', async (req, res) =>{
+    const { WaveId, WaveTime, WaveDate } = req.body;
+
+    if(!WaveId || !WaveTime || !WaveDate) {
+        res.status(400).json({ message: "WaveId, WaveTime and WaveDate is required" });
+        return;
+    }
+
+    const authHeader = req.headers.authorization;
+
+    if(!authHeader) {
+        res.status(401).json({ error: 'Token não informado' });
+        return;
+    }
+
+    const user = await getUserById(
+        getUserIdFromJwt(authHeader)
+    );
+
+    if(!user) {
+        throw new Error('Usuário não encontrado');
+    }
+
+    const availabilityId = await getAvailabilityId(Number(WaveId), WaveTime.toString(), WaveDate.toString());
+    
+    const userLimit = await checkUserLimitForNextMonth(Number(user.UserId));
+
+    if(!userLimit.hasLimit) {
+        res.status(400).json({ message: `O usuário já utilizou todas suas sessão do ${userLimit.type}` });
+        return;
+    }
+
+    if(!availabilityId) {
+        res.status(400).json({ message: "Disponibilidade de sessão não encontrada" });
+        return;
+    }
+    
+    const haveDayLimit = await checkDayLimit(availabilityId)
+
+    if(!haveDayLimit) {
+        res.status(400).json({ message: "Limite de sessões por dia atingido" });
+        return;
+    }
+
+    const ticketId = Number(await scheduleTicket(Number(user.UserId), Number(user.PersonId), availabilityId));
+
+    res.status(200).json({ message: "Sessão agendada com sucesso", ticketId });
+    
+    return;
 });
 
 export default router;
