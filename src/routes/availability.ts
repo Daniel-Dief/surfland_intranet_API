@@ -167,19 +167,19 @@ router.post('/scheduleSession', async (req, res) =>{
     const userLimit = await checkUserLimitForNextMonth(Number(user.UserId));
 
     if(!userLimit.hasLimit) {
-        res.status(400).json({ message: `O usuário já utilizou todas suas sessão do ${userLimit.type}` });
+        res.status(200).json({ message: `O usuário já utilizou todas suas sessão do ${userLimit.type}` });
         return;
     }
 
     if(!availabilityId) {
-        res.status(400).json({ message: "Disponibilidade de sessão não encontrada" });
+        res.status(200).json({ message: "Disponibilidade de sessão não encontrada" });
         return;
     }
     
     const haveDayLimit = await checkDayLimit(availabilityId)
 
     if(!haveDayLimit) {
-        res.status(400).json({ message: "Limite de sessões por dia atingido" });
+        res.status(200).json({ message: "Limite de sessões por dia atingido" });
         return;
     }
 
