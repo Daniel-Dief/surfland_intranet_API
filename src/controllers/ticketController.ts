@@ -152,6 +152,27 @@ async function scheduleTicket(userId : number, personId : number, availabilityId
     return ticket.TicketId;
 }
 
+async function cancelTicketById(ticketId : number) {
+    if(!ticketId) {
+        throw new Error("TicketId is required");
+    }
+
+    const ticket = await prisma.tickets.update({
+        where: {
+            TicketId: ticketId
+        },
+        data: {
+            StatusId: 3
+        }
+    });
+
+    if(Number(ticket.StatusId) === 3) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 export {
     getTickets,
     getTicketById,
@@ -159,5 +180,6 @@ export {
     updateTicket,
     deleteTicket,
     getTicketsByUser,
-    scheduleTicket
+    scheduleTicket,
+    cancelTicketById
 }

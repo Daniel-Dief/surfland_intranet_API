@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getTicketsByUser } from '../controllers/ticketController';
+import { getTicketsByUser, cancelTicketById } from '../controllers/ticketController';
 import getUserIdFromJwt from '../utils/userIdFromJwt'
 
 const router = Router();
@@ -43,6 +43,52 @@ router.get('/myTickets', async (req, res) =>{
     });
 
     res.status(200).json(myTickets);
+});
+
+/**
+ * @swagger
+ * /tickets/cancelTicket:
+ *   post:
+ *     summary: Cancela um ticket
+ *     tags: [Tickets]
+ *     responses:
+ *       200:
+ *         description: Cancela um ticket
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   TicketId:
+ *                      type: string
+ *                      description: Id do ticket
+ *                   
+ */
+router.post('/cancelTicket', async (req, res) =>{
+    const { TicketId } = req.body;
+
+    if(!TicketId) {
+        res.status(400).json({ error: 'TicketId não informado' });
+        return;
+    }
+
+    const result = await cancelTicketById(Number(TicketId));
+
+    if(!result) {
+        res.status(200).json({
+            message: 'Erro ao alterar o Ticket',
+            ticketId: Number(TicketId)
+        });
+        return;
+    } else {
+        res.status(200).json({
+            message: 'Ticket cancelado com sucesso',
+            ticketId: Number(TicketId)
+        });
+        return;
+    }
 });
 
 export default router;
