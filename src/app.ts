@@ -19,7 +19,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use((req, res, next) => {
-  validateToken({ req, res, next });
+  if(!req.originalUrl.startsWith('/api-docs')) {
+    validateToken({ req, res, next });
+  } else {
+    next();
+  }
 })
 
 // Swagger configuration
